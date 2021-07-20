@@ -1,0 +1,143 @@
+package com.revoltcode.util;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.csv.CsvMapper;
+import com.fasterxml.jackson.dataformat.csv.CsvSchema;
+import com.revoltcode.model.GeoLocation;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.ZonedDateTime;
+import java.util.*;
+
+public class DataUtil {
+    private static ObjectMapper objectMapper = new ObjectMapper();
+
+    public static String getDate(String format){
+        return new SimpleDateFormat("dd/M/yyyy'+'hh:mm:ss").format(Timestamp.from(ZonedDateTime.now().toInstant()));
+    }
+
+    public static String generateIMEI(){
+        int pos;
+        int[] str = new int[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        int sum = 0;
+        int final_digit;
+        int t;
+        int len_offset;
+        int len = 15;
+        String imei = "";
+
+        String[] rbi = new String[]{"01", "10", "30", "33", "35", "44", "45", "49", "50", "51", "52", "53", "54", "86", "91", "98", "99"};
+        String[] arr = rbi[(int) Math.floor(Math.random() * rbi.length)].split("");
+        str[0] = Integer.parseInt(arr[0]);
+        str[1] = Integer.parseInt(arr[1]);
+        pos = 2;
+
+        while (pos < len - 1) {
+            str[pos++] = (int) (Math.floor(Math.random() * 10) % 10);
+        }
+
+        len_offset = (len + 1) % 2;
+        for (pos = 0; pos < len - 1; pos++) {
+            if ((pos + len_offset) % 2 != 0) {
+                t = str[pos] * 2;
+                if (t > 9) {
+                    t -= 9;
+                }
+                sum += t;
+            } else {
+                sum += str[pos];
+            }
+        }
+
+        final_digit = (10 - (sum % 10)) % 10;
+        str[len - 1] = final_digit;
+
+        for (int d : str) {
+            imei += String.valueOf(d);
+        }
+
+        return imei;
+    }
+
+    /**
+     * @Description: Randomly generate latitude and longitude within a rectangle
+     * @param MinLon: minimum longitude
+     * MaxLon: maximum longitude
+     * MinLat: minimum latitude
+     * MaxLat: maximum latitude
+     * @return @throws
+     */
+    public static GeoLocation getRandomGeoLocation(double MinLon, double MaxLon, double MinLat, double MaxLat) {
+        BigDecimal db = new BigDecimal(Math.random() * (MaxLon - MinLon) + MinLon);
+        String longitude = db.setScale(6, BigDecimal.ROUND_HALF_UP).toString();// 6 digits after the decimal
+
+        db = new BigDecimal(Math.random() * (MaxLat - MinLat) + MinLat);
+        String latitude = db.setScale(6, BigDecimal.ROUND_HALF_UP).toString();
+
+        return GeoLocation.builder().longitude(Float.valueOf(longitude)).latitude(Float.valueOf(latitude)).build();
+    }
+
+    public static List<String> getPhoneBook(){
+        List<String> phoneBook = new ArrayList<>();
+        phoneBook.add("090243562784");
+        phoneBook.add("08175837283");
+        phoneBook.add("09075836273");
+        phoneBook.add("07056783982");
+        phoneBook.add("07043723475");
+        phoneBook.add("08069847383");
+        phoneBook.add("08043294093");
+        phoneBook.add("09043783944");
+        phoneBook.add("08173647583");
+        phoneBook.add("08154635245");
+        phoneBook.add("09074635426");
+        phoneBook.add("08054343254");
+        phoneBook.add("09083927473");
+        phoneBook.add("09075847483");
+        phoneBook.add("08174783822");
+        phoneBook.add("08193843932");
+        phoneBook.add("09064372382");
+        phoneBook.add("08043766232");
+        phoneBook.add("07096876633");
+        phoneBook.add("07054738433");
+        phoneBook.add("07043232455");
+
+        return phoneBook;
+    }
+
+    public static void saveAsCSV(String fileName, String jsonData){
+        try {
+            JsonNode jsonTree = objectMapper.readTree(jsonData);
+            CsvSchema.Builder csvSchemaBuilder = CsvSchema.builder();
+            JsonNode firsJsonNode = jsonTree.elements().next();
+            firsJsonNode.fieldNames().forEachRemaining(fieldName -> {csvSchemaBuilder.addColumn(fieldName);});
+            CsvSchema csvSchema = csvSchemaBuilder.build().withHeader();
+
+            CsvMapper csvMapper = new CsvMapper();
+            csvMapper.writerFor(JsonNode.class)
+                    .with(csvSchema)
+                    .writeValue(new File("/home/revolt/Documents/CST sample data/generated data/"+fileName+".csv"), jsonTree);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /*public static void saveAsJsonFile(String fileName, ){
+        try{
+            objectMapper.writeValue("/home/revolt/Documents/CST sample data/generated data/"+fileName+".json", );
+        }catch (Exception ex){
+
+        }
+    }*/
+
+    public static String generateNumberRef(int n) {
+        int value = (int) Math.pow(10, n - 1);
+        return String.valueOf(value + new Random().nextInt(9 * value));
+    }
+}
