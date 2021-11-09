@@ -1,6 +1,7 @@
 package com.revoltcode.model.device;
 
 import com.revoltcode.model.calls.Call;
+import com.revoltcode.model.calls.CallLog;
 import com.revoltcode.model.calls.Contact;
 import com.revoltcode.model.media.DocumentFile;
 import com.revoltcode.model.media.ImageFile;
@@ -9,8 +10,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.Date;
 import java.util.List;
 
 @Data
@@ -42,5 +41,6 @@ public class Device {
         private List<Call> calls;
         private List<ImageFile> imageFiles;
         private List<DocumentFile> documentFiles;
-        private TrackingReport trackingReports;
+        private List<CallLog> callLogs;
+        private List<TrackingReport> trackingReports;
 }

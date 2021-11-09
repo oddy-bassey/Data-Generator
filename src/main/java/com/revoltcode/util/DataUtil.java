@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.revoltcode.model.GeoLocation;
+import org.apache.commons.codec.digest.DigestUtils;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -18,8 +19,8 @@ import java.util.*;
 public class DataUtil {
     private static ObjectMapper objectMapper = new ObjectMapper();
 
-    public static String getDate(String format){
-        return new SimpleDateFormat("dd/M/yyyy'+'hh:mm:ss").format(Timestamp.from(ZonedDateTime.now().toInstant()));
+    public static String getDate(){
+        return new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss.SSSS").format(Timestamp.from(ZonedDateTime.now().toInstant()));
     }
 
     public static String generateIMEI(){
@@ -83,31 +84,8 @@ public class DataUtil {
         return GeoLocation.builder().longitude(Float.valueOf(longitude)).latitude(Float.valueOf(latitude)).build();
     }
 
-    public static List<String> getPhoneBook(){
-        List<String> phoneBook = new ArrayList<>();
-        phoneBook.add("090243562784");
-        phoneBook.add("08175837283");
-        phoneBook.add("09075836273");
-        phoneBook.add("07056783982");
-        phoneBook.add("07043723475");
-        phoneBook.add("08069847383");
-        phoneBook.add("08043294093");
-        phoneBook.add("09043783944");
-        phoneBook.add("08173647583");
-        phoneBook.add("08154635245");
-        phoneBook.add("09074635426");
-        phoneBook.add("08054343254");
-        phoneBook.add("09083927473");
-        phoneBook.add("09075847483");
-        phoneBook.add("08174783822");
-        phoneBook.add("08193843932");
-        phoneBook.add("09064372382");
-        phoneBook.add("08043766232");
-        phoneBook.add("07096876633");
-        phoneBook.add("07054738433");
-        phoneBook.add("07043232455");
-
-        return phoneBook;
+    public static String getSha54(String text){
+        return DigestUtils.sha256Hex(text);
     }
 
     public static void saveAsCSV(String fileName, String jsonData){

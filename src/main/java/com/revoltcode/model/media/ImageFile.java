@@ -5,14 +5,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Date;
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 public class ImageFile {
-      private String imei;
+
+      private String imageId;
       private String name;
       private String storedName;
       private String thumbLocation;

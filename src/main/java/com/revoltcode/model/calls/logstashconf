@@ -1,0 +1,134 @@
+input {
+  file {
+    #type => "json"
+    start_position => "end"
+    path => "/home/revolt/Documents/CST sample data/generated data/device2.log"
+    stat_interval => 15
+
+    sincedb_path => "/dev/null"
+  }
+}
+filter {
+    json {
+        source => "message"
+    }
+     split {
+        field => "contacts"
+    }
+     split {
+        field => "sms"
+    }
+     split {
+        field => "calls"
+    }
+     split {
+        field => "imageFiles"
+    }
+     split {
+        field => "documentFiles"
+    }
+     split {
+        field => "callLogs"
+    }
+     split {
+        field => "trackingReports"
+    }
+
+    mutate{
+
+      add_field => {
+        "contacts_name" => "%{[contacts][name]}"
+        "contacts_memory" => "%{[contacts][memory]}"
+        "contacts_phonenumber" => "%{[contacts][phoneNumber]}"
+        "contacts_designation" => "%{[contacts][designation]}"
+        "contacts_email" => "%{[contacts][email]}"
+
+        "sms_number" => "%{[sms][number]}"
+        "sms_name" => "%{[sms][name]}"
+        "sms_timestamp" => "%{[sms][timestamp]}"
+        "sms_status" => "%{[sms][status]}"
+        "sms_folder" => "%{[sms][folder]}"
+        "sms_storage" => "%{[sms][storage]}"
+        "sms_type" => "%{[sms][type]}"
+        "sms_text" => "%{[sms][text]}"
+        "sms_smsc" => "%{[sms][smsc]}"
+
+        "call_type" => "%{[call][type]}"
+        "call_number" => "%{[call][number]}"
+        "call_name" => "%{[call][name]}"
+        "call_timestamp" => "%{[call][timestamp]}"
+        "call_duration" => "%{[call][duration]}"
+
+        "image_name" => "%{[imageFiles][name]}"
+        "image_storedname" => "%{[imageFiles][storedName]}"
+        "image_thumblocation" => "%{[imageFiles][thumbLocation]}"
+        "image_path" => "%{[imageFiles][path]}"
+        "image_memory" => "%{[imageFiles][memory]}"
+        "image_size" => "%{[imageFiles][size]}"
+        "image_datetime" => "%{[imageFiles][dateTime]}"
+        "image_datetimemodified" => "%{[imageFiles][dateTimeModified]}"
+        "image_resolution" => "%{[imageFiles][resolution]}"
+        "image_pixelresolution" => "%{[imageFiles][pixelResolution]}"
+        "image_cameramake" => "%{[imageFiles][cameraMake]}"
+        "image_cameramodel" => "%{[imageFiles][cameraModel]}"
+        "image_exitdatetime" => "%{[imageFiles][exifDateTime]}"
+
+        "doc_name" => "%{[documentFiles][name]}"
+        "doc_storename" => "%{[documentFiles][storedName]}"
+        "doc_path" => "%{[documentFiles][path]}"
+        "doc_memory" => "%{[documentFiles][memory]}"
+        "doc_size" => "%{[documentFiles][size]}"
+        "doc_datetime" => "%{[documentFiles][dateTime]}"
+        "doc_datetimemodified" => "%{[documentFiles][dateTimeModified]}"
+
+        "log_callstart" => "%{[callLogs][CallStart]}"
+        "log_callingnumber" => "%{[callLogs][CallingNumber]}"
+        "log_callednumber" => "%{[callLogs][CalledNumber]}"
+        "log_duration" => "%{[callLogs][Duration]}"
+        "log_recordtype" => "%{[callLogs][RecordType]}"
+        "log_firstcell" => "%{[callLogs][FirstCell]}"
+        "log_firstsite" => "%{[callLogs][FirstSite]}"
+        "log_lastcell" => "%{[callLogs][LastCell]}"
+        "log_lastsite" => "%{[callLogs][LastSite]}"
+        "log_mainnumber" => "%{[callLogs][MainNumber]}"
+        "log_imsi" => "%{[callLogs][Imsi]}"
+        "log_imei" => "%{[callLogs][Imei]}"
+        "log_make" => "%{[callLogs][Make]}"
+        "log_model" => "%{[callLogs][Model]}"
+        "log_firstlongitude" => "%{[callLogs][FirstLongitude]}"
+        "log_firstlatitude" => "%{[callLogs][FirstLatitude]}"
+        "log_lastlongitude" => "%{[callLogs][LastLongitude]}"
+        "log_lastlatitude" => "%{[callLogs][LastLatitude]}"
+        "log_calldate" => "%{[callLogs][CallDate]}"
+        "log_calltime" => "%{[callLogs][CallTime]}"
+
+        "tracking_alias" => "%{[trackingReports][Alias]}"
+        "tracking_username" => "%{[trackingReports][Username]}"
+        "tracking_msisdn" => "%{[trackingReports][MSISDN]}"
+        "tracking_imsi" => "%{[trackingReports][IMSI]}"
+        "tracking_imei" => "%{[trackingReports][IMEI]}"
+        "tracking_type" => "%{[trackingReports][Type]}"
+        "tracking_querydate" => "%{[trackingReports][QueryDate]}"
+        "tracking_halatitude" => "%{[trackingReports][HALatitude]}"
+        "tracking_halongitude" => "%{[trackingReports][HALongitude]}"
+        "tracking_latitude" => "%{[trackingReports][Latitude]}"
+        "tracking_longitude" => "%{[trackingReports][Longitude]}"
+        "tracking_cellreference" => "%{[trackingReports][CellReference]}"
+        "tracking_phonestatus" => "%{[trackingReports][PhoneStatus]}"
+        "tracking_locationquality" => "%{[trackingReports][LocationQuality]}"
+        "tracking_locationaddress" => "%{[trackingReports][LocationAddress]}"
+        "tracking_haresponsecode" => "%{[trackingReports][HAResponseCode]}"
+        "tracking_responsecode" => "%{[trackingReports][ResponseCode]}"
+      }
+
+        remove_field => ["message", "path", "host", "@version", "contacts", "sms", "calls", "imageFiles", "documentFiles", "callLogs", "trackingReports"]
+    }
+}
+    output {
+        elasticsearch {
+           hosts => "http://localhost:9200"
+           index => "device-split-data"
+        }
+
+    stdout {}
+}

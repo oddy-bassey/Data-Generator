@@ -4,10 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.jsefa.csv.annotation.CsvDataType;
-import org.jsefa.csv.annotation.CsvField;
-
-import java.util.Date;
+import com.revoltcode.datacategory.PhoneStatus;
 
 @Data
 @AllArgsConstructor
@@ -15,37 +12,39 @@ import java.util.Date;
 @Builder
 public class TrackingReport {
 
-    String Alias;
+    String trackingId;
 
-    String Username;
+    String alias;
 
-    String MSISDN;
+    String username;
 
-    String IMSI;
+    String msisdn;
 
-    String IMEI;
+    String imsi;
 
-    String Type;
+    String imei;
 
-    String QueryDate;
+    String type;
 
-    float HALatitude;
+    String queryDate;
 
-    float HALongitude;
+    float haLatitude;
 
-    float Latitude;
+    float haLongitude;
 
-    float Longitude;
+    float latitude;
 
-    String CellReference;
+    float longitude;
 
-    com.revoltcode.datacategory.PhoneStatus PhoneStatus;
+    String cellReference;
 
-    String LocationQuality;
+    PhoneStatus phoneStatus;
 
-    String LocationAddress;
+    String locationQuality;
 
-    Integer HAResponseCode;
+    String locationAddress;
 
-    String ResponseCode;
+    Integer haResponseCode;
+
+    String responseCode;
 }

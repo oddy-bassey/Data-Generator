@@ -7,15 +7,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Date;
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 public class Sms {
 
-   private String imei;
+   private String smsId;
    private String number;
    private String name;
    private String timestamp;

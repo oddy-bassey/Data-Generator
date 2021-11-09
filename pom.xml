@@ -17,6 +17,25 @@
     </properties>
 
     <dependencies>
+        <!-- https://mvnrepository.com/artifact/org.jsefa/jsefa -->
+        <dependency>
+            <groupId>org.jsefa</groupId>
+            <artifactId>jsefa</artifactId>
+            <version>0.9.3.RELEASE</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/com.github.javafaker/javafaker -->
+        <dependency>
+            <groupId>com.github.javafaker</groupId>
+            <artifactId>javafaker</artifactId>
+            <version>1.0.2</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/commons-codec/commons-codec -->
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.15</version>
+        </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-csv</artifactId>

@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class Contact {
 
-    private String imei;
+    private String contactId;
     private String name;
     private String memory;
     private String phoneNumber;

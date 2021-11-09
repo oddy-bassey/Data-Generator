@@ -13,7 +13,7 @@ import java.util.Date;
 @Builder
 public class DocumentFile {
 
-    private String imei;
+    private String docId;
     private String name;
     private String storedName;
     private String path;

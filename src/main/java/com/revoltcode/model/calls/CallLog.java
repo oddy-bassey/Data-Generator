@@ -5,10 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.jsefa.csv.annotation.CsvDataType;
-import org.jsefa.csv.annotation.CsvField;
-
-import java.util.Date;
 
 @Data
 @AllArgsConstructor
@@ -16,45 +12,47 @@ import java.util.Date;
 @Builder
 public class CallLog {
 
-    private String CallStart;
+    private String logId;
 
-    private String CallingNumber;
+    private String callStart;
 
-    private String CalledNumber;
+    private String callingNumber;
 
-    private Integer Duration;
+    private String calledNumber;
 
-    private RecordType RecordType;
+    private Integer duration;
 
-    private String FirstCell;
+    private RecordType recordType;
 
-    private String FirstSite;
+    private String firstCell;
 
-    private String LastCell;
+    private String firstSite;
 
-    private String LastSite;
+    private String lastCell;
 
-    private String MainNumber;
+    private String lastSite;
 
-    private String Imsi;
+    private String mainNumber;
 
-    private String Imei;
+    private String imsi;
 
-    private String Make;
+    private String imei;
 
-    private String Model;
+    private String make;
 
-    private float FirstLongitude;
+    private String model;
 
-    private float FirstLatitude;
+    private float firstLongitude;
 
-    private float LastLongitude;
+    private float firstLatitude;
 
-    private float LastLatitude;
+    private float lastLongitude;
 
-    private String CallDate;
+    private float lastLatitude;
 
-    private String CallTime;
+    private String callDate;
+
+    private String callTime;
 }
 
 

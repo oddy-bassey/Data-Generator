@@ -15,8 +15,13 @@ import com.revoltcode.model.media.ImageFile;
 import com.revoltcode.model.message.Sms;
 import com.revoltcode.util.DataUtil;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.*;
+import java.util.logging.FileHandler;
 import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
 public class DataGenerator {
     private static List<Phone> phones = new ArrayList<>();
@@ -24,6 +29,7 @@ public class DataGenerator {
     private static List<Contact> contacts = new ArrayList<>();
     private static List<Call> calls = new ArrayList<>();
     private static List<Sms> messages = new ArrayList<>();
+    private static List<CallLog> callLogs = new ArrayList<>();
     private static List<ImageFile> images = new ArrayList<>();
     private static List<DocumentFile> files = new ArrayList<>();
 
@@ -32,41 +38,54 @@ public class DataGenerator {
     private static List<String> imageInternalStorage = new ArrayList<>();
     private static List<String> fileInternalStorage = new ArrayList<>();
 
+    private static Map<Integer, Device> createdUserDevice = new HashMap<>();
     private static Map<String, String> IMEI = new HashMap<>();
     private static Map<String, String> ICCID = new HashMap<>();
     private static Map<String, String> IMSI = new HashMap<>();
-    private static Map<String, String> ADVERTISINGID = new HashMap<>();
     private static Map<String, String> deviceContacts = new HashMap<>();
-
-    private static Map<String, List<Contact>> userContacts = new HashMap<>();
+    private static Map<String, String> deviceOwnerNumbers = new HashMap<>();
 
     private static Logger log = Logger.getLogger(DataGenerator.class.getName());
+
     private static ObjectMapper objectMapper = new ObjectMapper();
     private static Random random = new Random();
     private static final int minLat = 5, minLong =5, maxLat = 10, maxLong = 10;
 
     public static void main(String[] args){
 
-        log.info("generating device data....");
-
         try {
             initializePresetData();
-
-            //generateTrackingData(1000);
-            //generateCallLogData(1000);
             generateDeviceDataSet();
+
+            log.info("*************"+DataUtil.getDate());
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public static TrackingReport generateTrackingData(int dataSize, String imsi, String imei) {
+    public static void configureLogger(){
+
+        try {
+            FileHandler fileHandler = new FileHandler("/home/revolt/Documents/CST sample data/generated data/device2.log");
+            log.addHandler(fileHandler);
+            SimpleFormatter formatter = new SimpleFormatter();
+            fileHandler.setFormatter(formatter);
+            log.setUseParentHandlers(false);
+
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    public static List<TrackingReport> generateTrackingData(int dataSize, String imsi, String imei) {
+
+        List<TrackingReport> trackingReportData = new ArrayList<>();
         try {
             final var IMEI = DataUtil.generateIMEI();
             PhoneStatus phoneStatus = null;
             Integer haResponseCode = null;
-            List<TrackingReport> trackingReportData = new ArrayList<>();
 
+            for(int i=0; i< random.nextInt(6)+1; i++) {
                 int month = random.nextInt(12);
                 int day = random.nextInt(29);
                 int hour = random.nextInt(18);
@@ -75,7 +94,7 @@ public class DataGenerator {
 
                 GeoLocation geoLoc = DataUtil.getRandomGeoLocation(minLong, maxLong, minLat, maxLat);
 
-                switch (random.nextInt(2)){
+                switch (random.nextInt(2)) {
                     case 0:
                         phoneStatus = PhoneStatus.ONLINE;
                         haResponseCode = 200;
@@ -87,124 +106,91 @@ public class DataGenerator {
                     default:
                 }
 
-                return TrackingReport.builder()
-                        .Alias("Test_sim")
-                        .Username("USER"+dataSize)
-                        .MSISDN(DataUtil.generateNumberRef(11))
-                        .IMSI(imsi)
-                        .IMEI(imei)
-                        .Type("MSISDN")
-                        .QueryDate(((String.valueOf(day).toCharArray().length < 2)? "0"+day : day) + "/"
-                                + ((String.valueOf(month).toCharArray().length < 2)? "0"+month : month)+"/2020"  + " " + ((String.valueOf(hour).toCharArray().length < 2)? "0"+hour : hour)
-                                + ":" + ((String.valueOf(minuites).toCharArray().length < 2)? "0"+minuites : minuites)  + ":" + ((String.valueOf(seconds).toCharArray().length < 2)? "0"+seconds : seconds))
+                trackingReportData.add(TrackingReport.builder()
+                        .trackingId(DataUtil.getSha54(UUID.randomUUID().toString()))
+                        .alias("Test_sim")
+                        .username("USER" + dataSize)
+                        .msisdn(DataUtil.generateNumberRef(11))
+                        .imsi(imsi)
+                        .imei(imei)
+                        .type("MSISDN")
+                        .queryDate(((String.valueOf(day).toCharArray().length < 2) ? "0" + day : day) + "/"
+                                + ((String.valueOf(month).toCharArray().length < 2) ? "0" + month : month) + "/2020" + " " + ((String.valueOf(hour).toCharArray().length < 2) ? "0" + hour : hour)
+                                + ":" + ((String.valueOf(minuites).toCharArray().length < 2) ? "0" + minuites : minuites) + ":" + ((String.valueOf(seconds).toCharArray().length < 2) ? "0" + seconds : seconds))
 
-                        .HALatitude(geoLoc.getLatitude())
-                        .HALongitude(geoLoc.getLongitude())
-                        .Latitude(geoLoc.getLatitude())
-                        .Longitude(geoLoc.getLongitude())
-                        .CellReference(DataUtil.generateNumberRef(9))
-                        .PhoneStatus(phoneStatus)
-                        .LocationQuality("UNKNOWN")
-                        .LocationAddress("NIGERIA")
-                        .HAResponseCode(haResponseCode)
-                        .ResponseCode("MTN/ATI:27+0+0+0")
-                        .build();
-
+                        .haLatitude(geoLoc.getLatitude())
+                        .haLongitude(geoLoc.getLongitude())
+                        .latitude(geoLoc.getLatitude())
+                        .longitude(geoLoc.getLongitude())
+                        .cellReference(DataUtil.generateNumberRef(9))
+                        .phoneStatus(phoneStatus)
+                        .locationQuality("UNKNOWN")
+                        .locationAddress("NIGERIA")
+                        .haResponseCode(haResponseCode)
+                        .responseCode("MTN/ATI:27+0+0+0")
+                        .build());
+                }
             //saving generated data to CSV file
             //DataUtil.saveAsCSV("TrackingReportData", objectMapper.writeValueAsString(trackingReportData));
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return null;
+        return trackingReportData;
     }
 
-    public static void generateCallLogData(int dataSize) {
+    public static CallLog generateCallLogData(String phoneNumber, String imsi, String imei, Contact contact, String time1, String time2) {
 
-        try{
+        RecordType recordType = null;
 
-            List<CallLog> callLogData = new ArrayList<>();
-            RecordType recordType = null;
-            List<String> phoneBook = DataUtil.getPhoneBook();
+        int month = random.nextInt(12);
+        int day = random.nextInt(29);
+        int hour = random.nextInt(18);
+        int minuites = random.nextInt(40);
+        int seconds = random.nextInt(40);
 
-            for(var i=1; i<=dataSize; i++){
+        var phoneBookIndex = random.nextInt(21);
 
-                int month = random.nextInt(12);
-                int day = random.nextInt(29);
-                int hour = random.nextInt(18);
-                int minuites = random.nextInt(40);
-                int seconds = random.nextInt(40);
+        GeoLocation geoLoc1 = DataUtil.getRandomGeoLocation(minLong, maxLong, minLat, maxLat);
+        GeoLocation geoLoc2 = DataUtil.getRandomGeoLocation(minLong, maxLong, minLat, maxLat);
 
-                var phoneBookIndex = random.nextInt(21);
-
-                GeoLocation geoLoc1 = DataUtil.getRandomGeoLocation(minLong, maxLong, minLat, maxLat);
-                GeoLocation geoLoc2 = DataUtil.getRandomGeoLocation(minLong, maxLong, minLat, maxLat);
-
-                switch (random.nextInt(2)){
-                    case 0:
-                        recordType = RecordType.TERM_SMS;
-                        break;
-                    case 1:
-                        recordType = RecordType.GPRS;
-                        break;
-                    default:
-                }
-
-                Phone phone = phones.get(random.nextInt(21));
-
-                String nc = null;
-                switch (random.nextInt(4)){
-                    case 0:
-                        nc = "070";
-                        break;
-
-                    case 1:
-                        nc = "080";
-                        break;
-
-                    case 2:
-                        nc = "090";
-                        break;
-
-                    case 3:
-                        nc = "081";
-                        break;
-
-                    default:
-                }
-                String phoneNumber = nc+DataUtil.generateNumberRef(8);
-
-                callLogData.add(CallLog.builder()
-                        .CallStart("2020-" + ((String.valueOf(month).toCharArray().length < 2)? "0"+month : month) + "-"
-                                + ((String.valueOf(day).toCharArray().length < 2)? "0"+day : day) + "T" + ((String.valueOf(hour).toCharArray().length < 2)? "0"+hour : hour)
-                                + ":" + ((String.valueOf(minuites).toCharArray().length < 2)? "0"+minuites : minuites)  + ":" + ((String.valueOf(seconds).toCharArray().length < 2)? "0"+seconds : seconds))
-
-                        .CallingNumber(phoneNumber)
-                        .CalledNumber(phoneBook.get((phoneBookIndex == 0)? 20 : phoneBookIndex))//randomize
-                        .Duration(random.nextInt(700))//randomize
-                        .RecordType(recordType)//randomize
-                        .FirstCell("30-20889-50321")
-                        .FirstSite("Some Place1")
-                        .LastCell("30-20889-50321")
-                        .LastSite("Some Place2")
-                        .MainNumber(phoneNumber)
-                        .Imsi(DataUtil.generateNumberRef(12))
-                        .Imei(DataUtil.generateIMEI())
-                        .Make(phone.getBrand())
-                        .Model(phone.getModel())
-                        .FirstLatitude(geoLoc1.getLatitude())
-                        .FirstLongitude(geoLoc1.getLongitude())
-                        .LastLatitude(geoLoc2.getLatitude())
-                        .LastLongitude(geoLoc2.getLongitude())
-                        .CallDate("2020-" + ((String.valueOf(month).toCharArray().length < 2)? "0"+month : month) + "-"
-                                + ((String.valueOf(day).toCharArray().length < 2)? "0"+day : day))
-                        .CallTime("00:"+((String.valueOf(minuites).toCharArray().length < 2)? "0"+minuites : minuites)+":"+((String.valueOf(seconds).toCharArray().length < 2)? "0"+seconds : seconds))
-                        .build());
-            }
-            //saving generated data to CSV file
-            DataUtil.saveAsCSV("CallData", objectMapper.writeValueAsString(callLogData));
-        }catch (Exception e){
-            e.printStackTrace();
+        switch (random.nextInt(2)){
+            case 0:
+                recordType = RecordType.TERM_SMS;
+                break;
+            case 1:
+                recordType = RecordType.GPRS;
+                break;
+            default:
         }
+
+        Phone phone = phones.get(random.nextInt(21));
+
+        CallLog callLog = CallLog.builder()
+            .logId(DataUtil.getSha54(UUID.randomUUID().toString()))
+            .callStart(time1)
+            .callingNumber(phoneNumber)
+            .calledNumber(contact.getPhoneNumber())//randomize
+            .duration(random.nextInt(700))//randomize
+            .recordType(recordType)//randomize
+            .firstCell("30-20889-50321")
+            .firstSite("Some Place")
+            .lastCell("30-20889-50321")
+            .lastSite("Some Place2")
+            .mainNumber(phoneNumber)
+            .imsi(imsi)
+            .imei(imei)
+            .make(phone.getBrand())
+            .model(phone.getModel())
+            .firstLatitude(geoLoc1.getLatitude())
+            .firstLongitude(geoLoc1.getLongitude())
+            .lastLatitude(geoLoc2.getLatitude())
+            .lastLongitude(geoLoc2.getLongitude())
+            .callDate("2020-" + ((String.valueOf(month).toCharArray().length < 2)? "0"+month : month) + "-"
+                    + ((String.valueOf(day).toCharArray().length < 2)? "0"+day : day))
+            .callTime(time2)
+            .build();
+
+        return callLog;
    }
 
    public static void initializePresetData(){
@@ -260,10 +246,17 @@ public class DataGenerator {
        fileInternalStorage.add("Internal shared storage/Android/data/");
    }
 
-   public static void generateDeviceDataSet() throws JsonProcessingException {
+   public static void generateDeviceDataSet() throws IOException, InterruptedException {
+
+        FileWriter fw = new FileWriter("/home/revolt/Documents/NifiData/device.log", true);
+        BufferedWriter bw = new BufferedWriter(fw);
+
         Device device = null;
-        int count = 1;
-       while (devices.size() < 200) {
+        int count = 0, repeat = 0;
+       while (devices.size() < 50) {
+
+           Thread.sleep(5000);
+
            Phone phone = phones.get(random.nextInt(21));
            String imei = DataUtil.generateIMEI();
 
@@ -291,54 +284,104 @@ public class DataGenerator {
            int minuites = random.nextInt(40);
            int seconds = random.nextInt(40);
 
-           device = Device.builder()
-                   .reportType("cell")
-                   .selectedManufacture(phone.getBrand())
-                   .selectedModel(phone.getModel())
-                   .detectedManufacture(phone.getBrand())
-                   .detectedModel(phone.getBrand())
-                   .revision("8." + random.nextInt() + "." + random.nextInt() + " " + DataUtil.generateNumberRef(6) + " BCDEFH-" + DataUtil.generateNumberRef(6) + "V237")
-                   .imei(imei)
-                   .iccid(iccid)
-                   .imsi(imsi)
-                   .advertisingId(DataUtil.generateNumberRef(6) + "ef-e" + DataUtil.generateNumberRef(3) + "-" + DataUtil.generateNumberRef(4) + "-" + DataUtil.generateNumberRef(3) + "c-" + DataUtil.generateNumberRef(4) + "cd9e2acf")
-                   .startDateTime(((String.valueOf(day).toCharArray().length < 2)? "0"+day : day) + "/"
-                           + ((String.valueOf(month).toCharArray().length < 2)? "0"+month : month)+"/2020"  + " " + ((String.valueOf(hour).toCharArray().length < 2)? "0"+hour : hour)
-                           + ":" + ((String.valueOf(minuites).toCharArray().length < 2)? "0"+minuites : minuites)  + ":" + ((String.valueOf(seconds).toCharArray().length < 2)? "0"+seconds : seconds))
+           String nc = null;
+           switch (random.nextInt(2)){
+               case 0:
+                   nc = "070";
+                   break;
 
-                   .endDateTime(((String.valueOf(day).toCharArray().length < 2)? "0"+day : day) + "/"
-                           + ((String.valueOf(month).toCharArray().length < 2)? "0"+month : month)+"/2020"  + " " + ((String.valueOf(hour).toCharArray().length < 2)? "0"+hour : hour)
-                           + ":" + ((String.valueOf(minuites).toCharArray().length < 2)? "0"+minuites : minuites)  + ":" + ((String.valueOf(seconds).toCharArray().length < 2)? "0"+seconds : seconds))
+               case 1:
+                   nc = "080";
+                   break;
 
-                   .phoneDateTime((((String.valueOf(day).toCharArray().length < 2)? "0"+day : day) + "/"
-                           + ((String.valueOf(month).toCharArray().length < 2)? "0"+month1 : month1)+"/2021"  + " " + ((String.valueOf(hour).toCharArray().length < 2)? "0"+hour : hour)
-                           + ":" + ((String.valueOf(minuites).toCharArray().length < 2)? "0"+minuites : minuites)  + ":" + ((String.valueOf(seconds).toCharArray().length < 2)? "0"+seconds : seconds)))
-                   .connectionType("USB Cable")
-                   .xmlFormat("1." + random.nextInt(9) + "." + random.nextInt(9) + "." + random.nextInt(9))
-                   .software("7." + random.nextInt(45) + "." + random.nextInt(9) + "." + random.nextInt(90)+" UFED")
-                   .serial(DataUtil.generateNumberRef(7))
-                   .usingclient(random.nextInt(4)+1)
-                   .trackingReports(generateTrackingData(count, imsi, imei))
-                   .build();
-           devices.add(device);
+               case 2:
+                   nc = "090";
+                   break;
 
-           count += 1;
+               case 3:
+                   nc = "081";
+                   break;
+
+               default:
+           }
+           String phoneNumber = "";
+           while(deviceOwnerNumbers.get(phoneNumber = nc+DataUtil.generateNumberRef(8)) != null){
+
+           }
+           deviceOwnerNumbers.put(phoneNumber, phoneNumber);
+
+           device = createdUserDevice.get(random.nextInt(50));
+           if(device != null){
+               device.setContacts(generateDeviceContact());
+               //device.setTrackingReports(generateTrackingData(count, imsi, imei));
+               device.setDocumentFiles(generateDeviceFiles());
+               device.setCallLogs(callLogs);
+               device.setCalls(generateDeviceCalls(phoneNumber, imsi, imei, device.getContacts()));
+               device.setSms(generateDeviceMessages(phoneNumber, device.getContacts()));
+               device.setImageFiles(generateDeviceImages(device.getSelectedManufacture(), device.getSelectedModel()));
+
+               repeat++;
+               log.info("repeat "+repeat);
+           }else {
+               device = Device.builder()
+                       .reportType("cell")
+                       .selectedManufacture(phone.getBrand())
+                       .selectedModel(phone.getModel())
+                       .detectedManufacture(phone.getBrand())
+                       .detectedModel(phone.getBrand())
+                       .revision("8." + random.nextInt() + "." + random.nextInt() + " " + DataUtil.generateNumberRef(6) + " BCDEFH-" + DataUtil.generateNumberRef(6) + "V237")
+                       .imei(imei)
+                       .iccid(iccid)
+                       .imsi(imsi)
+                       .advertisingId(DataUtil.generateNumberRef(6) + "ef-e" + DataUtil.generateNumberRef(3) + "-" + DataUtil.generateNumberRef(4) + "-" + DataUtil.generateNumberRef(3) + "c-" + DataUtil.generateNumberRef(4) + "cd9e2acf")
+                       .startDateTime(((String.valueOf(day).toCharArray().length < 2) ? "0" + day : day) + "/"
+                               + ((String.valueOf(month).toCharArray().length < 2) ? "0" + month : month) + "/2020" + " " + ((String.valueOf(hour).toCharArray().length < 2) ? "0" + hour : hour)
+                               + ":" + ((String.valueOf(minuites).toCharArray().length < 2) ? "0" + minuites : minuites) + ":" + ((String.valueOf(seconds).toCharArray().length < 2) ? "0" + seconds : seconds))
+
+                       .endDateTime(((String.valueOf(day).toCharArray().length < 2) ? "0" + day : day) + "/"
+                               + ((String.valueOf(month).toCharArray().length < 2) ? "0" + month : month) + "/2020" + " " + ((String.valueOf(hour).toCharArray().length < 2) ? "0" + hour : hour)
+                               + ":" + ((String.valueOf(minuites).toCharArray().length < 2) ? "0" + minuites : minuites) + ":" + ((String.valueOf(seconds).toCharArray().length < 2) ? "0" + seconds : seconds))
+
+                       .phoneDateTime((((String.valueOf(day).toCharArray().length < 2) ? "0" + day : day) + "/"
+                               + ((String.valueOf(month).toCharArray().length < 2) ? "0" + month1 : month1) + "/2021" + " " + ((String.valueOf(hour).toCharArray().length < 2) ? "0" + hour : hour)
+                               + ":" + ((String.valueOf(minuites).toCharArray().length < 2) ? "0" + minuites : minuites) + ":" + ((String.valueOf(seconds).toCharArray().length < 2) ? "0" + seconds : seconds)))
+                       .connectionType("USB Cable")
+                       .xmlFormat("1." + random.nextInt(9) + "." + random.nextInt(9) + "." + random.nextInt(9))
+                       .software("7." + random.nextInt(45) + "." + random.nextInt(9) + "." + random.nextInt(90) + " UFED")
+                       .serial(DataUtil.generateNumberRef(7))
+                       .usingclient(random.nextInt(4) + 1)
+                       .contacts(generateDeviceContact())
+                       .trackingReports(generateTrackingData(count, imsi, imei))
+                       .documentFiles(generateDeviceFiles())
+                       .callLogs(callLogs)
+                       .build();
+
+               device.setCalls(generateDeviceCalls(phoneNumber, imsi, imei, device.getContacts()));
+               device.setSms(generateDeviceMessages(phoneNumber, device.getContacts()));
+               device.setImageFiles(generateDeviceImages(device.getSelectedManufacture(), device.getSelectedModel()));
+               devices.add(device);
+               count += 1;
+
+               log.info(" data "+count);
+           }
+           createdUserDevice.put(count, device);
+           String data = objectMapper.writeValueAsString(device);
+
+           bw.write(data);
+           bw.newLine();
+
        }
-       DataUtil.saveAsCSV("device", objectMapper.writeValueAsString(devices));
-
-       generateDeviceContact(device);
-       generateDeviceCalls(device);
-       generateDeviceMessages(device);
-       generateDeviceImages(device);
-       generateDeviceFiles(device);
+       bw.close();
    }
 
-   public static void generateDeviceContact(Device device) throws JsonProcessingException {
+    public static List<Contact> generateDeviceContact() throws JsonProcessingException {
        contacts.clear();
         int x = 1;
-        int bound = random.nextInt(100);
 
-        while(contacts.size() < bound){
+        int bound = random.nextInt(6);
+
+        while(contacts.size() < bound+1){
+            log.info("generating "+bound);
             String nc = null;
 
             switch (random.nextInt(4)){
@@ -389,9 +432,9 @@ public class DataGenerator {
             }
 
             contacts.add(Contact.builder()
+                    .contactId(DataUtil.getSha54(UUID.randomUUID().toString()))
                     .name("firstname"+x+" surname"+x)
                     .memory("Phone")
-                    .imei(device.getImei())
                     .designation(designation)
                     .phoneNumber(phoneNumber)
                     .email("")
@@ -399,16 +442,18 @@ public class DataGenerator {
 
             x++;
        }
-        userContacts.put(device.getImei(), contacts);
-       DataUtil.saveAsCSV("device-contact", objectMapper.writeValueAsString(contacts));
+       return contacts;
    }
 
-   public static void generateDeviceCalls(Device device) throws JsonProcessingException {
+    public static List<Call> generateDeviceCalls(String phoneNumber, String imsi, String imei, List<Contact> contacts) throws JsonProcessingException {
+       callLogs.clear();
+       calls.clear();
+
        int x = 1;
-       int bound = random.nextInt(1000);
+       int bound = random.nextInt(6);
        CallType callType = null;
 
-       while(calls.size() < bound) {
+       while(calls.size() < bound+1) {
            int month = random.nextInt(12)+1;
            int day = random.nextInt(29);
            int hour = random.nextInt(18);
@@ -431,158 +476,143 @@ public class DataGenerator {
                default:
            }
 
-           Contact contact = userContacts.get(device.getImei()).get(random.nextInt(userContacts.get(device.getImei()).size()));
-           calls.add(Call.builder()
-                   .imei(devices.get(random.nextInt(200)).getImei())
+           Contact contact = contacts.get(random.nextInt(contacts.size()));
+
+           int day1 = ((String.valueOf(day).toCharArray().length < 2)? Integer.valueOf("0"+day) : day);
+           int month1 = ((String.valueOf(month).toCharArray().length < 2)? Integer.valueOf("0"+month) : month);
+           int hours1 = ((String.valueOf(hour).toCharArray().length < 2)? Integer.valueOf("0"+hour) : hour);
+           int minuites1 = ((String.valueOf(minuites).toCharArray().length < 2)? Integer.valueOf("0"+minuites) : minuites);
+           int seconds1 = ((String.valueOf(seconds).toCharArray().length < 2)? Integer.valueOf("0"+seconds) : seconds);
+
+           int minuites2 = ((String.valueOf(minuites).toCharArray().length < 2)? Integer.valueOf("0"+minuites) : minuites);
+           int seconds2 = ((String.valueOf(seconds).toCharArray().length < 2)? Integer.valueOf("0"+seconds) : seconds);
+
+           Call call = Call.builder()
+                   .callId(DataUtil.getSha54(UUID.randomUUID().toString()))
                    .type(callType)
                    .number(contact.getPhoneNumber())
                    .name(contact.getName())
-                   .timestamp(((String.valueOf(day).toCharArray().length < 2)? "0"+day : day) + "/"
-                           + ((String.valueOf(month).toCharArray().length < 2)? "0"+month : month)+"/2020"  + " " + ((String.valueOf(hour).toCharArray().length < 2)? "0"+hour : hour)
-                           + ":" + ((String.valueOf(minuites).toCharArray().length < 2)? "0"+minuites : minuites)  + ":" + ((String.valueOf(seconds).toCharArray().length < 2)? "0"+seconds : seconds))
+                   .timestamp( day1+ "/" + month1 +"/2020"  + " " + hours1 + ":" + minuites1 + ":" + seconds1)
+                   .duration("00:"+minuites2+":"+seconds2)
+                   .build();
 
-                   .duration("00:"+((String.valueOf(minuites).toCharArray().length < 2)? "0"+minuites : minuites)+":"+((String.valueOf(seconds).toCharArray().length < 2)? "0"+seconds : seconds))
-                   .build());
+           calls.add(call);
 
+           callLogs.add(generateCallLogData(phoneNumber, imsi, imei, contact, call.getTimestamp(), call.getDuration()));
            x++;
-           }
-       DataUtil.saveAsCSV("device-call", objectMapper.writeValueAsString(calls));
        }
 
-       public static void generateDeviceMessages(Device device) throws JsonProcessingException {
-            messages.clear();
-            int x = 1;
-           int bound = random.nextInt(1000);
+       return calls;
+   }
 
-            while(messages.size() < bound){
-                int month = random.nextInt(12)+1;
-                int day = random.nextInt(29);
-                int hour = random.nextInt(18);
-                int minuites = random.nextInt(40);
-                int seconds = random.nextInt(40);
+    public static List<Sms> generateDeviceMessages(String phoneNumber, List<Contact> contacts) throws JsonProcessingException {
+        messages.clear();
+        int x = 1;
+       int bound = random.nextInt(6);
 
-                Contact contact = userContacts.get(device.getImei()).get(random.nextInt(userContacts.get(device.getImei()).size()));
-                MsgStatus msgStatus = null;
-                MsgType msgType = null;
+        while(messages.size() < bound+1){
+            int month = random.nextInt(12)+1;
+            int day = random.nextInt(29);
+            int hour = random.nextInt(18);
+            int minuites = random.nextInt(40);
+            int seconds = random.nextInt(40);
 
-                switch (random.nextInt(2)){
-                    case 0:
-                        msgStatus = MsgStatus.READ;
-                        break;
+            MsgStatus msgStatus = null;
+            MsgType msgType = null;
 
-                    case 1:
-                        msgStatus = MsgStatus.UNREAD;
-                        break;
-                    default:
-                }
-                switch (random.nextInt(2)){
-                    case 0:
-                        msgType = MsgType.OUTGOING;
-                        break;
+            switch (random.nextInt(2)){
+                case 0:
+                    msgStatus = MsgStatus.READ;
+                    break;
 
-                    case 1:
-                        msgType = MsgType.INCOMING;
-                        break;
-                    default:
-                }
-
-                String nc = null, name = null;
-                switch (random.nextInt(4)){
-                    case 0:
-                        nc = "+23470";
-                        name = "Airtel";
-                        break;
-
-                    case 1:
-                        nc = "+23480";
-                        name = "GLO";
-                        break;
-
-                    case 2:
-                        nc = "+23490";
-                        name = "Etisalat";
-                        break;
-
-                    case 3:
-                        nc = "+23481";
-                        name = "MTN";
-                        break;
-
-                    default:
-                }
-                String phoneNumber = nc+DataUtil.generateNumberRef(8);
-
-                messages.add(Sms.builder()
-                        .imei(devices.get(random.nextInt(200)).getImei())
-                        .number(contact.getPhoneNumber())
-                        .name(name)
-                        .timestamp(((String.valueOf(day).toCharArray().length < 2)? "0"+day : day) + "/"
-                                + ((String.valueOf(month).toCharArray().length < 2)? "0"+month : month)+"/2020"  + " " + ((String.valueOf(hour).toCharArray().length < 2)? "0"+hour : hour)
-                                + ":" + ((String.valueOf(minuites).toCharArray().length < 2)? "0"+minuites : minuites)  + ":" + ((String.valueOf(seconds).toCharArray().length < 2)? "0"+seconds : seconds))
-
-                        .status(msgStatus)
-                        .folder("Inbox")
-                        .storage("Phone")
-                        .type(msgType)
-                        .text(sampleSms.get(random.nextInt(20)))
-                        .smsc(phoneNumber)
-                        .build());
-
-                x++;
+                case 1:
+                    msgStatus = MsgStatus.UNREAD;
+                    break;
+                default:
             }
-           DataUtil.saveAsCSV("device-sms", objectMapper.writeValueAsString(messages));
-       }
+            switch (random.nextInt(2)){
+                case 0:
+                    msgType = MsgType.OUTGOING;
+                    break;
 
-       public static void generateDeviceImages(Device device) throws JsonProcessingException {
-        images.clear();
-            int x =1;
-           int bound = random.nextInt(1000);
-
-            while(images.size() < bound){
-                int month = random.nextInt(12)+1;
-                int day = random.nextInt(29);
-                int hour = random.nextInt(18);
-                int minuites = random.nextInt(40);
-                int seconds = random.nextInt(40);
-
-                int height = random.nextInt(100);
-                images.add(ImageFile.builder()
-
-                        .imei(device.getImei())
-                        .name("screenshot_2021"+month+""+day+"_"+x+"png")
-                        .storedName("screenshot_2021"+month+""+day+"_"+x+"png")
-                        .thumbLocation("Images/screenshot_2021"+month+""+day+"_"+x+"png")
-                        .path(imageInternalStorage.get(random.nextInt(3)))
-                        .memory("Phone")
-                        .size(Integer.valueOf(DataUtil.generateNumberRef(4)))
-                        .dateTime(((String.valueOf(day).toCharArray().length < 2)? "0"+day : day) + "/"
-                                + ((String.valueOf(month).toCharArray().length < 2)? "0"+month : month)+"/2020"  + " " + ((String.valueOf(hour).toCharArray().length < 2)? "0"+hour : hour)
-                                + ":" + ((String.valueOf(minuites).toCharArray().length < 2)? "0"+minuites : minuites)  + ":" + ((String.valueOf(seconds).toCharArray().length < 2)? "0"+seconds : seconds))
-
-                        .dateTimeModified(((String.valueOf(day).toCharArray().length < 2)? "0"+day : day) + "/"
-                                + ((String.valueOf(month).toCharArray().length < 2)? "0"+month : month)+"/2020"  + " " + ((String.valueOf(hour).toCharArray().length < 2)? "0"+hour : hour)
-                                + ":" + ((String.valueOf(minuites).toCharArray().length < 2)? "0"+minuites : minuites)  + ":" + ((String.valueOf(seconds).toCharArray().length < 2)? "0"+seconds : seconds))
-
-                        .resolution(String.valueOf(height+10+" X "+height))
-                        .exifDateTime(((String.valueOf(day).toCharArray().length < 2)? "0"+day : day) + "/"
-                                + ((String.valueOf(month).toCharArray().length < 2)? "0"+month : month)+"/2020"  + " " + ((String.valueOf(hour).toCharArray().length < 2)? "0"+hour : hour)
-                                + ":" + ((String.valueOf(minuites).toCharArray().length < 2)? "0"+minuites : minuites)  + ":" + ((String.valueOf(seconds).toCharArray().length < 2)? "0"+seconds : seconds))
-                        .resolution(String.valueOf(height+10+" X "+height))
-                        .pixelResolution(String.valueOf(height+10+" X "+height))
-                        .cameraMake(device.getDetectedManufacture())
-                        .cameraModel(device.getDetectedModel())
-                        .build());
-
-                x++;
+                case 1:
+                    msgType = MsgType.INCOMING;
+                    break;
+                default:
             }
 
-           DataUtil.saveAsCSV("device-image", objectMapper.writeValueAsString(images));
-       }
+            Contact contact = contacts.get(random.nextInt(contacts.size()));
 
-    public static void generateDeviceFiles(Device device) throws JsonProcessingException {
+            messages.add(Sms.builder()
+                    .smsId(DataUtil.getSha54(UUID.randomUUID().toString()))
+                    .number(contact.getPhoneNumber())
+                    .name(contact.getName())
+                    .timestamp(((String.valueOf(day).toCharArray().length < 2)? "0"+day : day) + "/"
+                            + ((String.valueOf(month).toCharArray().length < 2)? "0"+month : month)+"/2020"  + " " + ((String.valueOf(hour).toCharArray().length < 2)? "0"+hour : hour)
+                            + ":" + ((String.valueOf(minuites).toCharArray().length < 2)? "0"+minuites : minuites)  + ":" + ((String.valueOf(seconds).toCharArray().length < 2)? "0"+seconds : seconds))
+
+                    .status(msgStatus)
+                    .folder("Inbox")
+                    .storage("Phone")
+                    .type(msgType)
+                    .text(sampleSms.get(random.nextInt(20)))
+                    .smsc(phoneNumber)
+                    .build());
+
+            x++;
+        }
+        return messages;
+   }
+
+    public static List<ImageFile> generateDeviceImages(String manufacturer, String model) throws JsonProcessingException {
+    images.clear();
+        int x =1;
+        int bound = random.nextInt(6+1);
+
+        while(images.size() < bound){
+            int month = random.nextInt(12)+1;
+            int day = random.nextInt(29);
+            int hour = random.nextInt(18);
+            int minuites = random.nextInt(40);
+            int seconds = random.nextInt(40);
+
+            int height = random.nextInt(100);
+            images.add(ImageFile.builder()
+                .imageId(DataUtil.getSha54(UUID.randomUUID().toString()))
+                .name("screenshot_2021"+month+""+day+"_"+x+"png")
+                .storedName("screenshot_2021"+month+""+day+"_"+x+"png")
+                .thumbLocation("Images/screenshot_2021"+month+""+day+"_"+x+"png")
+                .path(imageInternalStorage.get(random.nextInt(3)))
+                .memory("Phone")
+                .size(Integer.valueOf(DataUtil.generateNumberRef(4)))
+                .dateTime(((String.valueOf(day).toCharArray().length < 2)? "0"+day : day) + "/"
+                        + ((String.valueOf(month).toCharArray().length < 2)? "0"+month : month)+"/2020"  + " " + ((String.valueOf(hour).toCharArray().length < 2)? "0"+hour : hour)
+                        + ":" + ((String.valueOf(minuites).toCharArray().length < 2)? "0"+minuites : minuites)  + ":" + ((String.valueOf(seconds).toCharArray().length < 2)? "0"+seconds : seconds))
+
+                .dateTimeModified(((String.valueOf(day).toCharArray().length < 2)? "0"+day : day) + "/"
+                        + ((String.valueOf(month).toCharArray().length < 2)? "0"+month : month)+"/2020"  + " " + ((String.valueOf(hour).toCharArray().length < 2)? "0"+hour : hour)
+                        + ":" + ((String.valueOf(minuites).toCharArray().length < 2)? "0"+minuites : minuites)  + ":" + ((String.valueOf(seconds).toCharArray().length < 2)? "0"+seconds : seconds))
+
+                .resolution(String.valueOf(height+10+" X "+height))
+                .exifDateTime(((String.valueOf(day).toCharArray().length < 2)? "0"+day : day) + "/"
+                        + ((String.valueOf(month).toCharArray().length < 2)? "0"+month : month)+"/2020"  + " " + ((String.valueOf(hour).toCharArray().length < 2)? "0"+hour : hour)
+                        + ":" + ((String.valueOf(minuites).toCharArray().length < 2)? "0"+minuites : minuites)  + ":" + ((String.valueOf(seconds).toCharArray().length < 2)? "0"+seconds : seconds))
+                .resolution(String.valueOf(height+10+" X "+height))
+                .pixelResolution(String.valueOf(height+10+" X "+height))
+                .cameraMake(manufacturer)
+                .cameraModel(model)
+                .build());
+
+            x++;
+        }
+
+       return  images;
+   }
+
+    public static List<DocumentFile> generateDeviceFiles() throws JsonProcessingException {
         files.clear();
         int x = 1;
-        int bound = random.nextInt(1000);
+        int bound = random.nextInt(6+1);
 
         while (files.size() < bound) {
             int month = random.nextInt(12)+1;
@@ -592,7 +622,7 @@ public class DataGenerator {
             int seconds = random.nextInt(40);
 
             files.add(DocumentFile.builder()
-                    .imei(device.getImei())
+                    .docId(DataUtil.getSha54(UUID.randomUUID().toString()))
                     .name("document"+1)
                     .storedName("000~file"+x+".txt")
                     .path(fileInternalStorage.get(random.nextInt(4)))
@@ -608,8 +638,23 @@ public class DataGenerator {
 
             x++;
         }
-        DataUtil.saveAsCSV("device-file", objectMapper.writeValueAsString(files));
+        return files;
     }
+
+    /*
+       convert => {
+          "duration" => "integer"
+          "firstLongitude" => "float"
+          "firstLatitude" => "float"
+          "lastLongitude" => "float"
+          "lastLatitude" => "float"
+	      "imsi" => "string"
+	      "lastSite" => "string"
+     }
+     add_field => ["source", "%{firstLatitude},%{firstLongitude}"]
+     add_field => ["destination", "%{lastLatitude},%{lastLongitude}"]
+    */
+
    /* TASK TABLE
     *
     * RESEARCH ON KIBANA VISUALIZATION //
